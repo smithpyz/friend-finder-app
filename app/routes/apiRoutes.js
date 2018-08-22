@@ -1,50 +1,63 @@
-var friendsData = require("..data/friends");
-var path = require("path");
-
-var totalDiff = 0;
+var friendsData = require ('../data/friends.js');
 
 module.exports = function (app) {
-  app.get("api/friends", function (req, res) {
-    res.json(friendsData);
-  });
+	app.get('/api/friends', function(req, res) {
+		res.json(friendsData);
+	});
 
 
-  //  * A POST routes`/api/friends`.This will be used to handle incoming survey results.This route will also be used to handle the compatibility logic. 
-  app.post("/data/friends", function (req, res) {
-    var friendMatch = {
-      name: "",
-      photo: "",
-      friendDiff: 1000,
-    };
+	app.post('/api/friends', function(req, res){
+		// Get survey inputs from api request, converting input to integers
+		const surveryResults = req.body.scores.map(x => parseInt(x));
+		var result = {
+			name: 'Default name',
+			photo: 'Default URL'
+		};
 
-    var userData = req.body;
-    var userName = userData.name;
-    var userPhoto = userData.photo;
-    var userScores = userData.scores;
-    var totalDiff = 0;
+		// console.log(friendsData);
 
-    //loop through the friends data array of objects to get each friends scores
-    for (var i = 0; i < friendsData.length - 1; i++) {
-      totalDiff = 0;
-      //loop through that friends score and the users score and calculate the 
-      // absolute difference between the two and push that to the total difference variable set above
-      for (var j = 0; j < 10; j++) {
-        // We calculate the difference between the scores and sum them into the totalDifference
-        totalDiff += Math.abs(parseInt(userScores[j]) - parseInt(friendsData[i].scores[j]));
-        // If the sum of differences is less then the differences of the current "best match"
-        if (totalDiff <= friendMatch.friendDiff) {
-          // Reset the friendMatch to be the new friend. 
-          friendMatch.name = friendsdata[i].name;
-          friendMatch.photo = friendsdata[i].photo;
-          friendMatch.matchDiff = totalDiff;
-        }
-      }
-    }
+		// Loop over possible matches to calculate score difference
+		for (let f=0;f<friendsData.length;f++) {
+			var deltas = [];
+			var difference = 0;
+			var totalDiff = 0;
 
-    friendsdata.push(userData);
+			console.log(surveryResults,'surveryResults');
+			console.log(friendsData[f].scores,friendsData[f].name);
 
-    res.json(friendMatch);
-  });
+			for (let s=0;s<friendsData[f].scores.length;s++) {
+				difference = friendsData[f].scores[s] - surveryResults[s];
+				difference = Math.abs(difference);
+				deltas.push(difference);
+			}
 
-};
+			totalDiff = deltas.reduce(function(acc, val) { return acc + val; });
+			
+			console.log(deltas,'Deltas');
+			console.log('Difference for ' + friendsData[f].name + ' is:',totalDiff);
 
+			friendsData[f].difference = totalDiff;
+		}
+
+		// console.log(friendsData);
+
+		
+		var lowestDiff = 9999; 
+		var chosenFriend = -1; 
+
+		console.log('-------------- Looking for closest match')
+		for (let f=0;f<friendsData.length;f++) {
+			if (friendsData[f].difference < lowestDiff) {
+				console.log('Found a lower match!',friendsData[f].name)
+				lowestDiff = friendsData[f].difference;
+				chosenFriend = f;
+			} else {
+				console.log('NO match!',friendsData[f].name, friendsData[f].difference, lowestDiff)
+			}
+		}
+
+		// Return closest match
+		res.json(friendsData[chosenFriend]);
+	});
+
+}
