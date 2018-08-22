@@ -2,16 +2,19 @@
 // DEPENDENCIES
 // We need to include the path package to get the correct file path for our html
 // ===============================================================================
-var path = require("path");
+var path = require('path');
 
-//    * A GET Route to`/survey` which should display the survey page:
-module.exports = function (app) {
-  app.get("/survey", function (req, res) {
-    res.sendFile(path.join(__dirname, "../public/survey.html"));
-  });
+module.exports = function (app,express) {
 
-  //    * A default, catch-all route that leads to`home.html` which displays the home page: 
-  app.get("*", function (req, res) {
-    res.sendFile(path.join(__dirname, "../public/home.html"));
-  });
-};
+	app.use('/assets', express.static(path.join(__dirname, '../assets')))
+
+	app.get('/survey', function(req, res) {
+		res.sendFile(path.join(__dirname + '/../public/survey.html'))
+	});
+	// sends user to homepage
+	app.use('/', function(req, res) {
+		console.log('home');
+		res.sendFile(path.join(__dirname + '/../public/home.html'))
+	});
+
+}
